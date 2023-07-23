@@ -1,9 +1,11 @@
 #pragma once
 
 #include "GameEngine.hpp"
+#include "Utils.hpp"
 
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -20,7 +22,21 @@ void GameEngine::init(const std::string& path)
 
 	while (!fin.eof() && !fin.fail())
 	{
-	
+		fin >> temp;
+		if (temp == "Window")
+		{
+			fin >> temp;
+			int width = stoi(Utils::split(temp, "="));
+
+			fin >> temp;
+			int height = stoi(Utils::split(temp, "="));
+
+			fin >> temp;
+			int frame = stoi(Utils::split(temp, "="));
+
+			m_window.create(sf::VideoMode(width, height), "Window");
+			m_window.setFramerateLimit(frame);
+		}
 	}
 }
 

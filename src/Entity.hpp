@@ -14,10 +14,12 @@ typedef std::tuple<
 	CBoundingBox,
 	CAnimation,
 	CGravity,
-	CState
+	CState,
+	CShape,
+	CConvex
 > ComponentTuple;
 
-enum Tag { DefaultTag = -1, Player, Enemy, Bullet, Tile, Dec, TAG_COUNT = Dec + 1 };
+enum Tag { DefaultTag = -1, Build, Player, TAG_COUNT = Player + 1 };
 
 class Entity
 {

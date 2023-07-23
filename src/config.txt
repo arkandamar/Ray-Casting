@@ -1,0 +1,1 @@
+Window width=1080 height=640 framerate=60

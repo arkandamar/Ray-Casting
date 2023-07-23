@@ -139,6 +139,7 @@
     <ClInclude Include="GameEngine.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="Scene_Play.hpp" />
+    <ClInclude Include="Utils.hpp" />
     <ClInclude Include="Vec2.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -152,7 +153,11 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Scene_Play.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Vec2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

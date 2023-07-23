@@ -4,7 +4,7 @@
 
 Entity::Entity(const Tag tag, size_t id) 
 	: m_tag(tag), m_id(id),
-	m_components(CTransform(), CLifespan(), CInput(), CBoundingBox(), CAnimation(), CGravity(), CState()) {};
+	m_components(CTransform(), CLifespan(), CInput(), CBoundingBox(), CAnimation(), CGravity(), CState(), CShape(), CConvex()) {};
 
 void Entity::destroy()
 {

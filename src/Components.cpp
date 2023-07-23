@@ -5,15 +5,19 @@
 CTransform::CTransform() {};
 CTransform::CTransform(const Vec2& p) : pos(p) {};
 
-CShape::CShape(float radius, int points, const sf::Color& fill
-	, const sf::Color& outline, float thickness)
-	: circle(radius, points)
+CShape::CShape() : circle(0.0f) {};
+CShape::CShape(float radius, int points, const sf::Color& fill): circle(radius, points)
 {
 	circle.setFillColor(fill);
-	circle.setOutlineColor(outline);
-	circle.setOutlineThickness(thickness);
 	circle.setOrigin(radius, radius);
 };
+
+CConvex::CConvex() : convex(0) {};
+CConvex::CConvex(int points, const sf::Color& fill)
+{
+	convex.setPointCount(points);
+	convex.setFillColor(fill);
+}
 
 CCollision::CCollision() : radius(0.0f) {};
 CCollision::CCollision(float rad) : radius(rad) {};

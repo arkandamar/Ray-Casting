@@ -30,7 +30,16 @@ public:
 	sf::CircleShape circle;
 
 	CShape();
-	CShape(float radius, int points, const sf::Color& fill, const sf::Color& outline, float thickness);
+	CShape(float radius, int points, const sf::Color& fill);
+};
+
+class CConvex : public Component
+{
+public:
+	sf::ConvexShape convex;
+
+	CConvex();
+	CConvex(int points, const sf::Color& fill);
 };
 
 class CCollision : public Component
