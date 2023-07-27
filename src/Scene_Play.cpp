@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 
 #include <iostream>
+#include <set>
 
 using std::cout;
 using std::endl;
@@ -80,6 +81,7 @@ void Scene_Play::update()
 	if (!m_paused)
 	{
 		sLifespan();
+		sRayCasting();
 		sIntercept();
 		sMovement();
 	}
@@ -94,7 +96,7 @@ void Scene_Play::spawnPlayer()
 	auto p = m_entityManager.addEntity(Player);
 	p->addComponent<CInput>();
 	p->addComponent<CTransform>(Vec2((float) width() / 2, (float) height() / 2));
-	p->addComponent<CShape>((float) 20, 30, sf::Color(255, 0, 0));
+	p->addComponent<CShape>((float) 6, 30, sf::Color(255, 0, 0));
 	m_player = p;
 }
 
@@ -134,22 +136,42 @@ void Scene_Play::registerLine()
 	for (auto& e : m_entityManager.getEntities(Build))
 	{
 		size_t pointCount = e->getComponent<CConvex>().convex.getPointCount();
-		for (int i = 0; i < pointCount; i++)
+		for (size_t i = 0; i < pointCount; i++)
 		{
-			float diffX = 0.0f, diffY = 0.0f;
+			LineSegment line;
 			if (i == pointCount - 1)
 			{
-				diffX = e->getComponent<CConvex>().convex.getPoint(i).x - e->getComponent<CConvex>().convex.getPoint(0).x;
-				diffY = e->getComponent<CConvex>().convex.getPoint(i).y - e->getComponent<CConvex>().convex.getPoint(0).y;
+				line.subs = Vec2
+				(
+					e->getComponent<CConvex>().convex.getPoint(0).x - e->getComponent<CConvex>().convex.getPoint(i).x,
+					e->getComponent<CConvex>().convex.getPoint(0).y - e->getComponent<CConvex>().convex.getPoint(i).y
+				);
+				line.tail = Vec2(e->getComponent<CConvex>().convex.getPoint(i).x, e->getComponent<CConvex>().convex.getPoint(i).y);
+				line.head = Vec2(e->getComponent<CConvex>().convex.getPoint(0).x, e->getComponent<CConvex>().convex.getPoint(0).y);
 			}
 			else
 			{
-				diffX = e->getComponent<CConvex>().convex.getPoint(i).x - e->getComponent<CConvex>().convex.getPoint((size_t) i + 1).x;
-				diffY = e->getComponent<CConvex>().convex.getPoint(i).y - e->getComponent<CConvex>().convex.getPoint((size_t) i + 1).y;
+				line.subs = Vec2
+				(
+					e->getComponent<CConvex>().convex.getPoint(i + 1).x - e->getComponent<CConvex>().convex.getPoint(i).x,
+					e->getComponent<CConvex>().convex.getPoint(i + 1).y - e->getComponent<CConvex>().convex.getPoint(i).y
+				);
+				line.tail = Vec2(e->getComponent<CConvex>().convex.getPoint(i).x, e->getComponent<CConvex>().convex.getPoint(i).y);
+				line.head = Vec2(e->getComponent<CConvex>().convex.getPoint(i + 1).x, e->getComponent<CConvex>().convex.getPoint(i + 1).y);
 			}
-			m_linesSegment.push_back(Vec2(diffX, diffY));
+			m_linesSegment.push_back(line);
 		}
 	}
+
+	// register line on window edge
+	LineSegment left = { NULL, Vec2(0,0), Vec2(0, height()), Vec2(0, height()) };
+	m_linesSegment.push_back(left);
+	LineSegment bottom = { NULL, Vec2(0, height()), Vec2(width(), height()), Vec2(width(), 0)};
+	m_linesSegment.push_back(bottom);
+	LineSegment right = { NULL, Vec2(width(), height()), Vec2(width(), 0), Vec2(0, -(float) height()) };
+	m_linesSegment.push_back(right);
+	LineSegment upper = { NULL, Vec2(width(), 0), Vec2(0, 0), Vec2(-(float) width(), -(float) height())};
+	m_linesSegment.push_back(upper);
 }
 
 void Scene_Play::sLifespan()
@@ -167,11 +189,45 @@ void Scene_Play::sLifespan()
 	}
 }
 
+void Scene_Play::sPoint()
+{
+	//// init for new angle
+	//m_angles.clear();
+
+	//// calculate angle between player and points
+	//for (auto& p : m_points)
+	//{
+	//	// calculate points's angle compare to player pos
+	//	Vec2 pPos = m_player->getComponent<CTransform>().pos;
+	//	Vec2 diff = p - pPos;
+	//	float angle = acosf(diff.x / diff.dist());
+
+	//	// all point that above m_player will get negative angle
+	//	if (p.y - pPos.y < 0) angle *= -1;
+	//	m_angles.push_back(angle);
+
+	//	// make deviation of rays based on angles
+	//	float diffX, diffY, deviation = 0.01f;
+	//	Vec2 newPoint;
+
+	//	// slightly right
+	//	float angleRight = angle - deviation;
+	//	diffX = cos(angleRight) * diff.dist();
+	//	diffY = sin(angleRight) * diff.dist();
+	//	newPoint = Vec2(pPos.x + diffX, pPos.y + diffY);
+	//	m_points.push_back(newPoint);
+
+	//	// slightly left
+	//	float angleLeft = angle + deviation;
+	//	diffX = cos(angleLeft) * diff.dist();
+	//	diffY = sin(angleLeft) * diff.dist();
+	//	newPoint = Vec2(pPos.x + diffX, pPos.y + diffY);
+	//	m_points.push_back(newPoint);
+	//}
+}
+
 void Scene_Play::sRayCasting()
 {
-	// init for new angle
-	m_angles.clear();
-
 	// init for new points
 	m_points.clear();
 
@@ -186,46 +242,79 @@ void Scene_Play::sRayCasting()
 		}
 	}
 
-	// calculate angle between player and points
+	m_rays.clear();
+	size_t id = 0;
 	for (auto& p : m_points)
 	{
-		// calculate points's angle compare to player pos
-		Vec2 pPos = m_player->getComponent<CTransform>().pos;
-		Vec2 diff = p - pPos;
-		float angle = acosf(diff.x / diff.dist());
-
-		// all point that above m_player will get negative angle
-		if (p.y - pPos.y < 0) angle *= -1;
-		m_angles.push_back(angle);
-
-		// make deviation of rays based on angles
-		float diffX, diffY, deviation = 0.01f;
-		Vec2 newPoint;
-
-		// slightly right
-		float angleRight = angle - deviation;
-		diffX = cos(angleRight) * diff.dist();
-		diffY = sin(angleRight) * diff.dist();
-		newPoint = Vec2(pPos.x + diffX, pPos.y + diffY);
-		m_points.push_back(newPoint);
-
-		// slightly left
-		float angleLeft = angle + deviation;
-		diffX = cos(angleLeft) * diff.dist();
-		diffY = sin(angleLeft) * diff.dist();
-		newPoint = Vec2(pPos.x + diffX, pPos.y + diffY);
-		m_points.push_back(newPoint);
-	}
-
-	for (auto& p : m_points)
-	{
-		drawLine(m_player->getComponent<CTransform>().pos, p);
+		m_rays.push_back(LineSegment{id++, m_player->getComponent<CTransform>().pos, p, p - m_player->getComponent<CTransform>().pos });
 	}
 }
 
 void Scene_Play::sIntercept()
 {
+	m_intercepts.clear();
 
+	std::map<size_t, std::vector<Intersect>> tempInterselect;
+
+	for (auto& r : m_rays)
+	{
+		for (auto& l : m_linesSegment)
+		{
+			Intersect inter = LineIntersect(r, l);
+
+			// if intercept occurred, push intersect to temporary array
+			if (inter.result)
+			{
+				tempInterselect[r.id].push_back(inter);
+			}
+		}
+	}
+
+	// checking invalid intersection
+	for (auto& inter : tempInterselect)
+	{
+		// check if there're rays that make more than 1 intersection
+		auto& arrInter = inter.second;
+
+		if (inter.second.size() > 1)
+		{
+			// compare all intersection with same rays and delete the greater value until only one left
+			float threshold = 1;
+			while (arrInter.size() > 1)
+			{
+				for (auto it = arrInter.begin(); it != arrInter.end();) {
+					if ((*it).scalar > threshold) {
+						it = arrInter.erase(it); // Erase the element and get the next valid iterator
+					}
+					else {
+						threshold = (*it).scalar;
+						++it; // Move to the next element
+					}
+				}
+			}
+			m_intercepts.push_back(arrInter.at(0).pos);
+		}
+		else
+		{
+			m_intercepts.push_back(inter.second.at(0).pos);
+		}
+	}
+
+	for (auto& r : m_rays)
+	{
+		// check if ray in list of intersection
+		bool isRayInList = false;
+		for (auto it = tempInterselect.begin(); it != tempInterselect.end(); it++)
+		{
+			if (it->first == r.id) isRayInList = true;
+		}
+
+		// if none then make ray as an intercept
+		if (!isRayInList)
+		{
+			m_intercepts.push_back(r.head);
+		}
+	}
 }
 
 void Scene_Play::sMovement()
@@ -281,8 +370,29 @@ void Scene_Play::sMovement()
 void Scene_Play::sRender()
 {
 	m_game->window().clear();
-	// render ray from m_player
-	sRayCasting();
+
+	// render points
+	for (auto& p : m_points)
+	{
+		sf::CircleShape point(5);
+		point.setOrigin(point.getRadius(), point.getRadius());
+		point.setFillColor(sf::Color::Red);
+		point.setPosition(p.x, p.y);
+		m_game->window().draw(point);
+	}
+
+	// render intercepts point
+	for (auto& i : m_intercepts)
+	{
+		// draw line between player to intercept
+		drawLine(m_player->getComponent<CTransform>().pos, i);
+
+		sf::CircleShape point(5);
+		point.setOrigin(point.getRadius(), point.getRadius());
+		point.setFillColor(sf::Color::Red);
+		point.setPosition(i.x, i.y);
+		m_game->window().draw(point);
+	}
 
 	// render entity
 	for (auto& e : m_entityManager.getEntities())
@@ -298,25 +408,29 @@ void Scene_Play::sRender()
 		}
 	}
 
-	// render points
-	for (auto& p : m_points)
-	{
-		sf::CircleShape point(5);
-		point.setOrigin(point.getRadius(), point.getRadius());
-		point.setFillColor(sf::Color::Red);
-		point.setPosition(p.x, p.y);
-		m_game->window().draw(point);
-	}
-
-	// render intercept
-	for (auto& i : m_intercepts)
-	{
-		sf::CircleShape point(5);
-		point.setOrigin(point.getRadius(), point.getRadius());
-		point.setFillColor(sf::Color::Red);
-		point.setPosition(i.x, i.y);
-		m_game->window().draw(point);
-	}
-
 	m_game->window().display();
+}
+
+Intersect Scene_Play::LineIntersect(LineSegment r, LineSegment s) const
+{
+	// make necessary property
+	Intersect inter = { false, Vec2(0,0)};
+
+	float T1, T2;
+
+	// Solve for T2!
+	T2 = (r.subs.x * (s.tail.y - r.tail.y) + r.subs.y * (r.tail.x - s.tail.x)) / (s.subs.x * r.subs.y - s.subs.y * r.subs.x);
+
+	// Plug the value of T2 to get T1
+	T1 = (s.tail.x + s.subs.x * T2 - r.tail.x) / r.subs.x;
+
+	// if there's intersection, change result to true
+	if (T1 > 0 && T1 < 1 && T2 > 0 && T2 < 1)
+	{
+		inter.result = true;
+		inter.pos = Vec2(r.tail.x + T1 * r.subs.x, r.tail.y + T1 * r.subs.y);
+		inter.scalar = T1;
+	}
+
+	return inter;
 }

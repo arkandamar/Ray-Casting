@@ -18,6 +18,26 @@ bool Vec2::operator!=(const Vec2& v) const
     return !(*this == v);
 }
 
+bool Vec2::operator<=(Vec2& v)
+{
+    return (dist() <= v.dist());
+}
+
+bool Vec2::operator<(Vec2& v)
+{
+    return (dist() < v.dist());
+}
+
+bool Vec2::operator>=(Vec2& v)
+{
+    return (dist() >= v.dist());
+}
+
+bool Vec2::operator>(Vec2& v)
+{
+    return (dist() > v.dist());
+}
+
 Vec2 Vec2::operator+(const Vec2& rhs) const
 {
     return Vec2(x + rhs.x, y + rhs.y);

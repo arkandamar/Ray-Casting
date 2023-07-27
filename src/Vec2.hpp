@@ -12,6 +12,10 @@ public:
 
 	bool operator == (const Vec2& v) const;
 	bool operator != (const Vec2& v) const;
+	bool operator <= (Vec2& v);
+	bool operator < (Vec2& v);
+	bool operator >= (Vec2& v);
+	bool operator > (Vec2& v);
 
 	Vec2 operator + (const Vec2& rhs) const;
 	Vec2 operator - (const Vec2& rhs) const;
